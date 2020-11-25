@@ -19,5 +19,27 @@ function stateIndex = ComputeTerminalStateIndex(stateSpace, map)
 %           stateSpace matrix
 
 global DROP_OFF
+[m,n] = size(map);
+vals = [];
+for i = 1:m
+    for j=1:n
+        if(map(i,j)==DROP_OFF)
+            vals = [vals;i,j];
+        end
+    end
+end
+if(size(vals)==0)
+    error('not exist')
+elseif(size(vals)>1)
+    error('multiple')
+else
+    for i = 1:size(stateSpace,1)
+%         s = [stateSpace(i,1),stateSpace(i,2),stateSpace(i,3),i]
+        if(stateSpace(i,1)==vals(1) && stateSpace(i,2)==vals(2) && stateSpace(i,3)==1)
+            stateIndex = i;
+            return
+        end
+    end
+end
                   
 end
