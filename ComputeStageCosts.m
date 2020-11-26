@@ -28,6 +28,88 @@ function G = ComputeStageCosts(stateSpace, map)
     global NORTH SOUTH EAST WEST HOVER
     global K
     global TERMINAL_STATE_INDEX
+    
+    G = zeros(K,5);
+    
+    for i=1:K
+        for next_dir = [NORTH, SOUTH, EAST, WEST, HOVER]
+            cur_x = stateSpace(i,1);
+            cur_y = stateSpace(i,2);
+            cur_package_status = stateSpace(i,3);
+            cur = [cur_x,cur_y,cur_package_status];
+            if(i==TERMINAL_STATE_INDEX)
+                G(i,next_dir)=0;
+            else
+                [next_pos,crash_status] = crash(i,next_dir,stateSpace);
+                if(crash_status)
+                    G(i,next_dir) = inf;
+                else
+                    P_SHOT = shotProbability(next_pos,map,stateSpace);
+                    G(i,next_dir) = G(i,next_dir) + 1 * (1 - P_WIND) * (1 - P_SHOT);
+                    G(i,next_dir) = G(i,next_dir) + Nc * (1 - P_WIND) * (P_SHOT);
+                    
+                    for wind = [NORTH, SOUTH, EAST, WEST]
+                        [final_pos,crash_status] = crash(next_pos,wind,stateSpace);
+                        if(crash_status)
+                            G(i,next_dir) = G(i,next_dir) + Nc * P_WIND/4;
+                        else
+                            P_SHOT = shotProbability(final_pos,map,stateSpace);
+                            G(i,next_dir) = G(i,next_dir) + 1 * (P_WIND/4) * (1 - P_SHOT);
+                            G(i,next_dir) = G(i,next_dir) + Nc * (P_WIND/4) * (P_SHOT);                          
+                        end
+                        
+                    end
+                    
+                end
+            end
+        end
+    end
 
 end
 
+
+function [state,crash] = crash(pos,direction,stateSpace)
+global NORTH SOUTH EAST WEST HOVER K
+    temp = stateSpace;
+    if(direction==NORTH)
+        temp(pos,2)=temp(pos,2)+1;
+    elseif(direction==SOUTH)
+        temp(pos,2)=temp(pos,2)-1;
+    elseif(direction==EAST)
+        temp(pos,1)=temp(pos,1)+1;
+    elseif(direction==WEST)
+        temp(pos,1)=temp(pos,1)-1;
+    end
+    
+    for i = 1:K
+%         s = [stateSpace(i,1),stateSpace(i,2),stateSpace(i,3),i]
+        if(stateSpace(i,1)==temp(pos,1) && stateSpace(i,2)==temp(pos,2) && stateSpace(i,3)==temp(pos,3))
+            crash=false;
+            state = i;
+            return
+        end
+    end
+    crash=true;
+    state = i;
+    return
+end
+
+function shotProbability = shotProbability(pos,map,stateSpace)
+global SHOOTER R GAMMA
+[m,n] = size(map);
+shooter = [];
+not_shot_prod = 1;
+for i =1:m
+    for j=1:n
+        if(map(i,j)==SHOOTER)
+            d = abs(i-stateSpace(pos,1))+abs(j-stateSpace(pos,2));
+            if(d<=R && d>=0)
+                not_shot_prob = 1-(GAMMA/(d+1));
+                not_shot_prod = not_shot_prod*not_shot_prob;
+            end
+        end
+    end
+end
+
+shotProbability = 1 - not_shot_prod;
+end

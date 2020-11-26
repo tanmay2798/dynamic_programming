@@ -1,4 +1,4 @@
-function P = ComputeTransitionProbabilities(stateSpace, map)
+function P2 = ComputeTransitionProbabilities(stateSpace, map)
 %COMPUTETRANSITIONPROBABILITIES Compute transition probabilities.
 % 	Compute the transition probabilities between all states in the state
 %   space for all control inputs.
@@ -28,7 +28,7 @@ global FREE TREE SHOOTER PICK_UP DROP_OFF BASE
 global NORTH SOUTH EAST WEST HOVER
 global K TERMINAL_STATE_INDEX
 
-baseindex = base_index(map,stateSpace)
+baseindex = base_index(map,stateSpace);
 ik=0;
 P = zeros(K,K,5);
 for i = 1:K
@@ -43,11 +43,6 @@ for i = 1:K
                     P(i,j,k)=0;
                 else
                     P(i,j,k) = P(i,j,k)+ (1-P_WIND)*(1-P_SHOT);
-                    if(i==1 && j==1)
-                        P(i,j,k)
-                        P_SHOT
-                        k
-                    end
                     P(i,baseindex,k) = P(i,baseindex,k)+(1-P_WIND)*(P_SHOT);
                 
                     for wind = [NORTH, SOUTH, EAST, WEST]
@@ -66,7 +61,6 @@ for i = 1:K
         end
     end
 end
-ik
 pickup = pick_up(map,stateSpace);
 P2 = P;
 
@@ -80,8 +74,6 @@ for i = 1:K
         end
     end
 end
-
-P=P2;
 
 end
 
@@ -173,8 +165,8 @@ function check_validity = check_validity(i,j,stateSpace,dir)
     next = [stateSpace(j,1),stateSpace(j,2),stateSpace(j,3)];
     dif_x = next(1) - current(1);
     dif_y = next(2) - current(2);
-    packMove = next(3) - current(3);
-    if ( packMove ~= 0 ) % should not pick package yet
+    dif_pack = next(3) - current(3);
+    if ( dif_pack ~= 0 )
         check_validity = false;
     elseif(dif_x==1 && dif_y==0 && dir == EAST) 
         check_validity=true;
@@ -202,7 +194,7 @@ for i =1:m
     for j=1:n
         if(map(i,j)==SHOOTER)
             d = abs(i-pos(1))+abs(j-pos(2));
-            if(d<R && d>0)
+            if(d<=R && d>=0)
                 not_shot_prob = 1-(GAMMA/(d+1));
                 not_shot_prod = not_shot_prod*not_shot_prob;
             end
