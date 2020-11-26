@@ -28,32 +28,32 @@ global FREE TREE SHOOTER PICK_UP DROP_OFF BASE
 global NORTH SOUTH EAST WEST HOVER
 global K TERMINAL_STATE_INDEX
 
-baseindex = base_index(map,stateSpace);
+base = base_index(map,stateSpace);
 ik=0;
 P = zeros(K,K,5);
 for i = 1:K
     current = [stateSpace(i,1),stateSpace(i,2),stateSpace(i,3)];
     for j=1:K
-        for k = [NORTH, SOUTH, EAST, WEST, HOVER]
-            if(check_validity(i,j,stateSpace,k))
+        for movement = [NORTH, SOUTH, EAST, WEST, HOVER]
+            if(check_validity(i,j,stateSpace,movement))
                 ik=ik+1;
                 next = [stateSpace(j,1),stateSpace(j,2),stateSpace(j,3)];
-                P_SHOT = shotProbability(next,map);
+                P_CRASHED = shotProbability(next,map);
                 if(i==TERMINAL_STATE_INDEX)
-                    P(i,j,k)=0;
+                    P(i,j,movement)=0;
                 else
-                    P(i,j,k) = P(i,j,k)+ (1-P_WIND)*(1-P_SHOT);
-                    P(i,baseindex,k) = P(i,baseindex,k)+(1-P_WIND)*(P_SHOT);
+                    P(i,j,movement) = P(i,j,movement)+ (1-P_WIND)*(1-P_CRASHED);
+                    P(i,base,movement) = P(i,base,movement)+(1-P_WIND)*(P_CRASHED);
                 
                     for wind = [NORTH, SOUTH, EAST, WEST]
                         [wind_new_pos,crash_status] = crash(j,wind,stateSpace);
                         if(crash_status)
-                            P(i,baseindex,k) = P(i,baseindex,k)+(P_WIND/4);
+                            P(i,base,movement) = P(i,base,movement)+(P_WIND/4);
                         else
                             next = [stateSpace(wind_new_pos,1),stateSpace(wind_new_pos,2),stateSpace(wind_new_pos,3)];
-                            P_SHOT = shotProbability(next,map);
-                            P(i,wind_new_pos,k) = P(i,wind_new_pos,k) + (1-P_SHOT)*(P_WIND/4);
-                            P(i,baseindex,k) = P(i,baseindex,k) + (P_SHOT)*(P_WIND/4);
+                            P_CRASHED = shotProbability(next,map);
+                            P(i,wind_new_pos,movement) = P(i,wind_new_pos,movement) + (1-P_CRASHED)*(P_WIND/4);
+                            P(i,base,movement) = P(i,base,movement) + (P_CRASHED)*(P_WIND/4);
                         end
                     end
                 end
@@ -66,10 +66,10 @@ P2 = P;
 
 for i = 1:K
     for j=1:K
-        for k = [NORTH, SOUTH, EAST, WEST, HOVER]
+        for movement = [NORTH, SOUTH, EAST, WEST, HOVER]
             if(j==pickup)
-                P2(i,pickup+1,k) = P2(i,pickup+1,k) + 1*P(i,pickup,k);
-                P2(i,pickup,k) = 0;
+                P2(i,pickup+1,movement) = P2(i,pickup+1,movement) + 1*P(i,pickup,movement);
+                P2(i,pickup,movement) = 0;
             end
         end
     end
@@ -89,6 +89,8 @@ global NORTH SOUTH EAST WEST HOVER
         temp(pos,1)=temp(pos,1)+1;
     elseif(direction==WEST)
         temp(pos,1)=temp(pos,1)-1;
+    elseif(direction==HOVER)
+        'no change';
     end
     
     for i = 1:size(stateSpace,1)
@@ -133,7 +135,7 @@ global PICK_UP
 end
 
 
-function baseindex = base_index(map,stateSpace)
+function base = base_index(map,stateSpace)
 global BASE
     [m,n] = size(map);
     vals = [];
@@ -152,7 +154,7 @@ global BASE
         for i = 1:size(stateSpace,1)
     %         s = [stateSpace(i,1),stateSpace(i,2),stateSpace(i,3),i]
             if(stateSpace(i,1)==vals(1) && stateSpace(i,2)==vals(2) && stateSpace(i,3)==0)
-                baseindex = i;
+                base = i;
                 return
             end
         end
@@ -163,20 +165,18 @@ function check_validity = check_validity(i,j,stateSpace,dir)
     global NORTH SOUTH EAST WEST HOVER
     current = [stateSpace(i,1),stateSpace(i,2),stateSpace(i,3)];
     next = [stateSpace(j,1),stateSpace(j,2),stateSpace(j,3)];
-    dif_x = next(1) - current(1);
-    dif_y = next(2) - current(2);
-    dif_pack = next(3) - current(3);
-    if ( dif_pack ~= 0 )
+    dif = next-current;
+    if ( dif(3) ~= 0 )
         check_validity = false;
-    elseif(dif_x==1 && dif_y==0 && dir == EAST) 
+    elseif(dif(1)==1 && dif(2)==0 && dir == EAST) 
         check_validity=true;
-    elseif(dif_x==-1 && dif_y==0 && dir == WEST) 
+    elseif(dif(1)==-1 && dif(2)==0 && dir == WEST) 
         check_validity=true;
-    elseif(dif_x==0 && dif_y==1 && dir == NORTH) 
+    elseif(dif(1)==0 && dif(2)==1 && dir == NORTH) 
         check_validity=true;
-    elseif(dif_x==0 && dif_y==-1 && dir == SOUTH) 
+    elseif(dif(1)==0 && dif(2)==-1 && dir == SOUTH) 
         check_validity=true;
-    elseif(dif_x==0 && dif_y==0 && dir == HOVER) 
+    elseif(dif(1)==0 && dif(2)==0 && dir == HOVER) 
         check_validity=true;
     else
         check_validity=false;

@@ -33,10 +33,6 @@ function G = ComputeStageCosts(stateSpace, map)
     
     for i=1:K
         for next_dir = [NORTH, SOUTH, EAST, WEST, HOVER]
-            cur_x = stateSpace(i,1);
-            cur_y = stateSpace(i,2);
-            cur_package_status = stateSpace(i,3);
-            cur = [cur_x,cur_y,cur_package_status];
             if(i==TERMINAL_STATE_INDEX)
                 G(i,next_dir)=0;
             else
@@ -44,18 +40,18 @@ function G = ComputeStageCosts(stateSpace, map)
                 if(crash_status)
                     G(i,next_dir) = inf;
                 else
-                    P_SHOT = shotProbability(next_pos,map,stateSpace);
-                    G(i,next_dir) = G(i,next_dir) + 1 * (1 - P_WIND) * (1 - P_SHOT);
-                    G(i,next_dir) = G(i,next_dir) + Nc * (1 - P_WIND) * (P_SHOT);
+                    P_CRASHED = shotProbability(next_pos,map,stateSpace);
+                    G(i,next_dir) = G(i,next_dir) + (1 - P_WIND)*(1 - P_CRASHED);
+                    G(i,next_dir) = G(i,next_dir) + (1 - P_WIND)*(P_CRASHED)*Nc;
                     
                     for wind = [NORTH, SOUTH, EAST, WEST]
                         [final_pos,crash_status] = crash(next_pos,wind,stateSpace);
                         if(crash_status)
-                            G(i,next_dir) = G(i,next_dir) + Nc * P_WIND/4;
+                            G(i,next_dir) = G(i,next_dir) + (P_WIND/4)*Nc;
                         else
-                            P_SHOT = shotProbability(final_pos,map,stateSpace);
-                            G(i,next_dir) = G(i,next_dir) + 1 * (P_WIND/4) * (1 - P_SHOT);
-                            G(i,next_dir) = G(i,next_dir) + Nc * (P_WIND/4) * (P_SHOT);                          
+                            P_CRASHED = shotProbability(final_pos,map,stateSpace);
+                            G(i,next_dir) = G(i,next_dir) + (P_WIND/4)*(1 - P_CRASHED);
+                            G(i,next_dir) = G(i,next_dir) + (P_WIND/4)*(P_CRASHED)*Nc;                          
                         end
                         
                     end
@@ -97,7 +93,6 @@ end
 function shotProbability = shotProbability(pos,map,stateSpace)
 global SHOOTER R GAMMA
 [m,n] = size(map);
-shooter = [];
 not_shot_prod = 1;
 for i =1:m
     for j=1:n
